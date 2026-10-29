@@ -7,14 +7,15 @@ interface MobileNavProps {
   currentTab: string;
   setTab: (tab: string) => void;
   onOpenReport: () => void;
+  onOpenPaperTrade?: () => void;
 }
 
-export function MobileNav({ currentTab, setTab, onOpenReport }: MobileNavProps) {
+export function MobileNav({ currentTab, setTab, onOpenReport, onOpenPaperTrade }: MobileNavProps) {
   const tabs = [
     { id: 'all', label: 'Markets', icon: Layers },
     { id: 'macro', label: 'Macro', icon: FileText },
     { id: 'report', label: 'AI Brief', icon: Sparkles, action: onOpenReport },
-    { id: 'paper_trade', label: 'Trade', icon: Briefcase },
+    { id: 'paper_trade', label: 'Trade', icon: Briefcase, action: onOpenPaperTrade },
   ];
 
   return (

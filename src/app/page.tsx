@@ -8,6 +8,7 @@ import { MobileNav } from '@/components/layout/MobileNav';
 import { TopCards } from '@/components/dashboard/TopCards';
 import { MarketTable } from '@/components/dashboard/MarketTable';
 import { AiReportModal } from '@/components/dashboard/AiReportModal';
+import { PaperTradingModal } from '@/components/trading/PaperTradingModal';
 import { MARKET_DATA as FALLBACK_MARKET, TICKER_DATA as FALLBACK_TICKER, TOP_GAINERS as FALLBACK_GAINERS } from '@/data/mockData';
 import { MarketApiResponse } from '@/types';
 import { ArrowRight, RefreshCw } from 'lucide-react';
@@ -16,6 +17,7 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isReportOpen, setIsReportOpen] = useState<boolean>(false);
+  const [isPaperTradeOpen, setIsPaperTradeOpen] = useState<boolean>(false);
 
   // 실시간 API 데이터 상태
   const [marketData, setMarketData] = useState<MarketApiResponse | null>(null);
@@ -71,6 +73,7 @@ export default function Home() {
           currentCategory={selectedCategory}
           setCategory={setSelectedCategory}
           onOpenReport={() => setIsReportOpen(true)}
+          onOpenPaperTrade={() => setIsPaperTradeOpen(true)}
         />
 
         {/* Right Main Body */}
@@ -157,11 +160,19 @@ export default function Home() {
         onClose={() => setIsReportOpen(false)}
       />
 
+      {/* Selah Paper Trading Modal */}
+      <PaperTradingModal
+        isOpen={isPaperTradeOpen}
+        onClose={() => setIsPaperTradeOpen(false)}
+        marketItems={currentMarketData}
+      />
+
       {/* Mobile Bottom Navigation Bar */}
       <MobileNav
         currentTab={selectedCategory}
         setTab={setSelectedCategory}
         onOpenReport={() => setIsReportOpen(true)}
+        onOpenPaperTrade={() => setIsPaperTradeOpen(true)}
       />
     </div>
   );
