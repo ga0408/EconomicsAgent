@@ -28,6 +28,31 @@ export interface TickerItem {
   isUp: boolean;
 }
 
+export interface TopGainerItem {
+  rank: number;
+  symbol: string;
+  name: string;
+  price: string;
+  change: number;
+  icon: string;
+}
+
+export interface MarketApiResponse {
+  tickerData: TickerItem[];
+  marketData: MarketItem[];
+  topGainers: TopGainerItem[];
+  fearAndGreed: {
+    value: number;
+    classification: string;
+  };
+  macroKeyRatio: {
+    usdKrw: { price: number; change: number; sparkline: number[] };
+    us10y: { price: number; change: number; sparkline: number[] };
+  };
+  btcDominance: number;
+  lastUpdated: string;
+}
+
 export type ReportCategory = 'Morning Brief' | 'Market Close' | 'Macro Event';
 
 export interface ReportItem {

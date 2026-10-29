@@ -1,14 +1,21 @@
 'use client';
 
 import React from 'react';
-import { TICKER_DATA } from '@/data/mockData';
+import { TICKER_DATA as DEFAULT_TICKER } from '@/data/mockData';
+import { TickerItem } from '@/types';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
-export function TickerBar() {
+interface TickerBarProps {
+  items?: TickerItem[];
+}
+
+export function TickerBar({ items = DEFAULT_TICKER }: TickerBarProps) {
+  const displayItems = items && items.length > 0 ? items : DEFAULT_TICKER;
+
   return (
     <div className="w-full bg-[#0b0e17] border-b border-[#1c2237] text-xs text-[#94a3b8] py-1.5 px-4 overflow-x-auto no-scrollbar">
       <div className="flex items-center gap-6 whitespace-nowrap min-w-max">
-        {TICKER_DATA.map((item) => (
+        {displayItems.map((item) => (
           <div key={item.name} className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer">
             <span className="font-medium text-[#64748b]">{item.name}:</span>
             <span className="text-[#f1f5f9] font-semibold">{item.value}</span>
