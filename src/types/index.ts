@@ -1,4 +1,4 @@
-// Common Types for Web & Mobile App (React Native / Expo Compatible)
+// Common Types for Web & Mobile App
 
 export type MarketCategory = 'crypto' | 'us_stock' | 'kr_stock' | 'macro';
 
@@ -10,22 +10,24 @@ export interface MarketItem {
   category: MarketCategory;
   categoryLabel: string;
   icon?: string;
-  price: number;
+  price: number | null;
   displayPrice: string;
-  change1h: number;
-  change24h: number;
-  change7d: number;
+  change1h: number | null;
+  change24h: number | null;
+  change7d: number | null;
   marketCapOrVolume: string;
   high24h: string;
   low24h: string;
   sparkline: number[];
+  isConnected?: boolean;
 }
 
 export interface TickerItem {
   name: string;
   value: string;
-  change: number;
+  change: number | null;
   isUp: boolean;
+  isConnected?: boolean;
 }
 
 export interface TopGainerItem {
@@ -42,14 +44,15 @@ export interface MarketApiResponse {
   marketData: MarketItem[];
   topGainers: TopGainerItem[];
   fearAndGreed: {
-    value: number;
+    value: number | null;
     classification: string;
+    isConnected: boolean;
   };
   macroKeyRatio: {
-    usdKrw: { price: number; change: number; sparkline: number[] };
-    us10y: { price: number; change: number; sparkline: number[] };
+    usdKrw: { price: number | null; change: number | null; sparkline: number[]; isConnected: boolean };
+    us10y: { price: number | null; change: number | null; sparkline: number[]; isConnected: boolean };
   };
-  btcDominance: number;
+  btcDominance: number | null;
   lastUpdated: string;
 }
 

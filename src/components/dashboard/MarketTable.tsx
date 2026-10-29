@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { MarketItem } from '@/data/mockData';
+import { MarketItem } from '@/types';
 import { Sparkline } from '@/components/ui/Sparkline';
 import {
   Star,
@@ -9,6 +9,7 @@ import {
   TrendingDown,
   ArrowUpDown,
   Filter,
+  AlertCircle,
 } from 'lucide-react';
 
 interface MarketTableProps {
@@ -38,7 +39,7 @@ export function MarketTable({
       setSortAsc(!sortAsc);
     } else {
       setSortField(field);
-      setSortAsc(false); // 보통 기본 내림차순
+      setSortAsc(false);
     }
   };
 
@@ -116,7 +117,7 @@ export function MarketTable({
       {/* Responsive Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-left text-xs text-[#cbd5e1]">
-          <thead className="bg-[#0c0f1a] text-[#64748b] border-b border-[#1c2237] uppercase text-[11px] font-semibold tracking-wider select-none">
+          <thead className="bg-[#0c0f1c] text-[#64748b] border-b border-[#1c2237] uppercase text-[11px] font-semibold tracking-wider select-none">
             <tr>
               <th className="py-3 px-3 w-10 text-center"></th>
               <th
@@ -172,8 +173,9 @@ export function MarketTable({
             ) : (
               filteredItems.map((item) => {
                 const isFav = !!favorites[item.id];
-                const is24hUp = item.change24h >= 0;
-                const is7dUp = item.change7d >= 0;
+                const isConnected = item.isConnected;
+                const is24hUp = (item.change24h || 0) >= 0;
+                const is7dUp = (item.change7d || 0) >= 0;
 
                 return (
                   <tr
@@ -214,6 +216,11 @@ export function MarketTable({
                             <span className="text-[10px] text-[#64748b] bg-[#1a2136] px-1.5 py-0.2 rounded font-normal">
                               {item.categoryLabel}
                             </span>
+                            {!isConnected && (
+                              <span className="text-[9px] text-zinc-500 bg-zinc-800/80 px-1 py-0.2 rounded border border-zinc-700/40 flex items-center gap-0.5">
+                                <AlertCircle className="w-2.5 h-2.5" /> 미연결
+                              </span>
+                            )}
                           </div>
                           <div className="text-[11px] text-[#64748b] font-medium">
                             {item.name}
@@ -223,45 +230,59 @@ export function MarketTable({
                     </td>
 
                     {/* Price */}
-                    <td className="py-3 px-4 text-right font-mono font-semibold text-white">
-                      {item.displayPrice}
+                    <td className="py-3 px-4 text-right font-mono font-semibold">
+                      {isConnected ? (
+                        <span className="text-white">{item.displayPrice}</span>
+                      ) : (
+                        <span className="text-zinc-500">--</span>
+                      )}
                     </td>
 
                     {/* 1h % */}
-                    <td
-                      className={`py-3 px-3 text-right font-mono font-medium hidden sm:table-cell ${
-                        item.change1h >= 0 ? 'text-[#10b981]' : 'text-[#ef4444]'
-                      }`}
-                    >
-                      {item.change1h >= 0 ? '+' : ''}
-                      {item.change1h.toFixed(2)}%
+                    <td className="py-3 px-3 text-right font-mono font-medium hidden sm:table-cell">
+                      {isConnected && item.change1h !== null ? (
+                        <span className={item.change1h >= 0 ? 'text-[#10b981]' : 'text-[#ef4444]'}>
+                          {item.change1h >= 0 ? '+' : ''}
+                          {item.change1h.toFixed(2)}%
+                        </span>
+                      ) : (
+                        <span className="text-zinc-600">--</span>
+                      )}
                     </td>
 
                     {/* 24h % */}
-                    <td
-                      className={`py-3 px-3 text-right font-mono font-semibold ${
-                        is24hUp ? 'text-[#10b981]' : 'text-[#ef4444]'
-                      }`}
-                    >
-                      <span className="inline-flex items-center">
-                        {is24hUp ? (
-                          <TrendingUp className="w-3 h-3 mr-0.5 inline" />
-                        ) : (
-                          <TrendingDown className="w-3 h-3 mr-0.5 inline" />
-                        )}
-                        {is24hUp ? '+' : ''}
-                        {item.change24h.toFixed(2)}%
-                      </span>
+                    <td className="py-3 px-3 text-right font-mono font-semibold">
+                      {isConnected && item.change24h !== null ? (
+                        <span
+                          className={`inline-flex items-center ${
+                            is24hUp ? 'text-[#10b981]' : 'text-[#ef4444]'
+                          }`}
+                        >
+                          {is24hUp ? (
+                            <TrendingUp className="w-3 h-3 mr-0.5 inline" />
+                          ) : (
+                            <TrendingDown className="w-3 h-3 mr-0.5 inline" />
+                          )}
+                          {is24hUp ? '+' : ''}
+                          {item.change24h.toFixed(2)}%
+                        </span>
+                      ) : (
+                        <span className="text-zinc-500 text-[10px] bg-zinc-800/60 px-1.5 py-0.5 rounded">
+                          연결 안 됨
+                        </span>
+                      )}
                     </td>
 
                     {/* 7d % */}
-                    <td
-                      className={`py-3 px-3 text-right font-mono font-medium hidden md:table-cell ${
-                        is7dUp ? 'text-[#10b981]' : 'text-[#ef4444]'
-                      }`}
-                    >
-                      {is7dUp ? '+' : ''}
-                      {item.change7d.toFixed(2)}%
+                    <td className="py-3 px-3 text-right font-mono font-medium hidden md:table-cell">
+                      {isConnected && item.change7d !== null ? (
+                        <span className={is7dUp ? 'text-[#10b981]' : 'text-[#ef4444]'}>
+                          {is7dUp ? '+' : ''}
+                          {item.change7d.toFixed(2)}%
+                        </span>
+                      ) : (
+                        <span className="text-zinc-600">--</span>
+                      )}
                     </td>
 
                     {/* Market Cap */}
@@ -271,13 +292,17 @@ export function MarketTable({
 
                     {/* 7d Sparkline Chart */}
                     <td className="py-3 px-4 text-center">
-                      <div className="flex justify-center">
-                        <Sparkline
-                          data={item.sparkline}
-                          width={110}
-                          height={30}
-                        />
-                      </div>
+                      {isConnected && item.sparkline && item.sparkline.length > 1 ? (
+                        <div className="flex justify-center">
+                          <Sparkline
+                            data={item.sparkline}
+                            width={110}
+                            height={30}
+                          />
+                        </div>
+                      ) : (
+                        <span className="text-zinc-600 text-xs">-</span>
+                      )}
                     </td>
                   </tr>
                 );
