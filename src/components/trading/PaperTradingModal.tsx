@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { SWING_PRESETS, evaluateSwingPosition } from '@/data/swingTradeRules';
+import { SWING_PRESETS } from '@/data/swingTradeRules';
+import { ALL_STRATEGIES, StrategyId } from '@/strategies';
 import { MarketItem } from '@/types';
 import {
   X,
@@ -12,19 +13,26 @@ import {
   RotateCcw,
   CheckCircle2,
   Info,
+  BookOpen,
+  Sliders,
+  Target,
 } from 'lucide-react';
 
 interface Position {
   symbol: string;
   name: string;
+  strategyName: string;
   quantity: number;
   avgPrice: number;
+  targetPrice: number;
+  stopLossPrice: number;
   entryDate: string;
 }
 
 interface TradeLog {
   id: string;
   symbol: string;
+  strategyName: string;
   type: 'BUY' | 'SELL';
   price: number;
   quantity: number;
@@ -45,6 +53,10 @@ export function PaperTradingModal({ isOpen, onClose, marketItems }: PaperTrading
   const [cash, setCash] = useState<number>(INITIAL_CASH);
   const [positions, setPositions] = useState<Position[]>([]);
   const [tradeLogs, setTradeLogs] = useState<TradeLog[]>([]);
+
+  // 전략 선택 상태
+  const [selectedStrategyId, setSelectedStrategyId] = useState<StrategyId>('selah_topdown');
+  const [showStrategyGuide, setShowStrategyGuide] = useState<boolean>(false);
 
   // 주문 폼 상태
   const [selectedSymbol, setSelectedSymbol] = useState<string>('NVDA');
@@ -96,6 +108,9 @@ export function PaperTradingModal({ isOpen, onClose, marketItems }: PaperTrading
     }
   };
 
+  // 현재 선택된 전략 객체
+  const currentStrategy = ALL_STRATEGIES.find((s) => s.id === selectedStrategyId) || ALL_STRATEGIES[0];
+
   // 현재 선택된 종목의 실시간 시세
   const currentAsset = marketItems.find((m) => m.symbol === selectedSymbol || m.id === selectedSymbol.toLowerCase());
   const currentPrice = currentAsset?.price || 140.0;
@@ -112,7 +127,8 @@ export function PaperTradingModal({ isOpen, onClose, marketItems }: PaperTrading
     notes: '기본 산출 박스권 레벨입니다.',
   };
 
-  const evaluation = evaluateSwingPosition(currentPrice, swingPreset);
+  // 선택된 전략으로 실시간 시세 평가
+  const evaluation = currentStrategy.evaluate(currentPrice);
 
   // 총 자산 및 평가 손익 계산
   const totalStockValue = positions.reduce((acc, pos) => {
@@ -149,6 +165,8 @@ export function PaperTradingModal({ isOpen, onClose, marketItems }: PaperTrading
         ...existing,
         quantity: totalQty,
         avgPrice: Number((totalCost / totalQty).toFixed(2)),
+        targetPrice: evaluation.targetPrice,
+        stopLossPrice: evaluation.stopLossPrice,
       };
     } else {
       newPositions = [
@@ -156,16 +174,20 @@ export function PaperTradingModal({ isOpen, onClose, marketItems }: PaperTrading
         {
           symbol: selectedSymbol,
           name: swingPreset.name,
+          strategyName: currentStrategy.nameKo,
           quantity: orderQuantity,
           avgPrice: currentPrice,
+          targetPrice: evaluation.targetPrice,
+          stopLossPrice: evaluation.stopLossPrice,
           entryDate: new Date().toLocaleDateString('ko-KR'),
         },
       ];
     }
 
     const newLog: TradeLog = {
-      id: Date.now().toString(),
+      id: `${Date.now()}-${Math.random()}`,
       symbol: selectedSymbol,
+      strategyName: currentStrategy.nameKo,
       type: 'BUY',
       price: currentPrice,
       quantity: orderQuantity,
@@ -174,7 +196,7 @@ export function PaperTradingModal({ isOpen, onClose, marketItems }: PaperTrading
     };
 
     saveState(newCash, newPositions, [newLog, ...tradeLogs]);
-    alert(`${swingPreset.name} ${orderQuantity}주 매수가 체결되었습니다!`);
+    alert(`[${currentStrategy.nameKo}] 원칙에 따라 ${swingPreset.name} ${orderQuantity}주 매수가 체결되었습니다!`);
   };
 
   // 매도 실행
@@ -199,8 +221,9 @@ export function PaperTradingModal({ isOpen, onClose, marketItems }: PaperTrading
     }
 
     const newLog: TradeLog = {
-      id: Date.now().toString(),
+      id: `${Date.now()}-${Math.random()}`,
       symbol: selectedSymbol,
+      strategyName: existing.strategyName,
       type: 'SELL',
       price: currentPrice,
       quantity: qty,
@@ -227,14 +250,14 @@ export function PaperTradingModal({ isOpen, onClose, marketItems }: PaperTrading
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-bold text-white tracking-tight">
-                  Selah 스윙 모의 트레이딩 (Paper Trading)
+                  모의 트레이딩 & 스윙 전략 시뮬레이터
                 </h2>
                 <span className="text-[10px] bg-blue-500/10 text-blue-400 font-semibold px-2 py-0.5 rounded border border-blue-500/20">
-                  SNULife Edition Rules
+                  Multi-Strategy Lab
                 </span>
               </div>
               <p className="text-[11px] text-[#64748b]">
-                지지선(S1) 진입 · 저항선(R1) 익절 · 손익비 2:1 이상 원칙을 실전 가상 매매로 훈련합니다.
+                Selah 탑다운, 20일선 눌림목, 신고가 돌파, RSI 반등 기법을 직접 적용하며 검증합니다.
               </p>
             </div>
           </div>
@@ -256,6 +279,84 @@ export function PaperTradingModal({ isOpen, onClose, marketItems }: PaperTrading
             </button>
           </div>
         </div>
+
+        {/* Strategy Selector Toolbar */}
+        <div className="px-5 py-2.5 bg-[#14192d] border-b border-[#1f2742] flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <span className="text-[#64748b] font-semibold text-[11px] mr-1 flex items-center gap-1">
+              <Sliders className="w-3.5 h-3.5" /> 전략 선택:
+            </span>
+            {ALL_STRATEGIES.map((strategy) => (
+              <button
+                key={strategy.id}
+                onClick={() => setSelectedStrategyId(strategy.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                  selectedStrategyId === strategy.id
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30 ring-1 ring-blue-400'
+                    : 'bg-[#0f1424] text-[#94a3b8] hover:text-white hover:bg-[#1b2238]'
+                }`}
+              >
+                <span>{strategy.nameKo}</span>
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setShowStrategyGuide(!showStrategyGuide)}
+            className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 font-semibold transition-colors shrink-0"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>{showStrategyGuide ? '가이드 접기' : '전략 매뉴얼 보기'}</span>
+          </button>
+        </div>
+
+        {/* Collapsible Strategy Guide Panel */}
+        {showStrategyGuide && (
+          <div className="px-5 py-4 bg-[#0d1222] border-b border-[#1f2742] text-xs space-y-3 animate-in slide-in-from-top-2 duration-150">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-white text-sm">{currentStrategy.nameKo}</span>
+                <span className="text-[10px] text-[#64748b]">({currentStrategy.authorOrOrigin})</span>
+              </div>
+              <div className="flex items-center gap-3 text-[11px] text-[#94a3b8]">
+                <span>보유기간: <strong className="text-white">{currentStrategy.timeframe}</strong></span>
+                <span>목표 승률: <strong className="text-white">{currentStrategy.targetWinRate}</strong></span>
+                <span>최소 손익비: <strong className="text-emerald-400">{currentStrategy.minRiskReward}</strong></span>
+              </div>
+            </div>
+
+            <p className="text-[#94a3b8] text-xs leading-relaxed bg-[#13192d] p-3 rounded-lg border border-[#1f2844]">
+              <strong>💡 핵심 철학:</strong> {currentStrategy.philosophy}
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px]">
+              <div className="p-2.5 rounded-lg bg-emerald-950/20 border border-emerald-800/30">
+                <span className="font-bold text-emerald-400 block mb-1">🟢 진입 조건 (Entry)</span>
+                <ul className="list-disc list-inside space-y-0.5 text-slate-300">
+                  {currentStrategy.entryRules.map((r, i) => (
+                    <li key={i}>{r}</li>
+                  ))}
+                </ul>
+              </div>
+              <div className="p-2.5 rounded-lg bg-amber-950/20 border border-amber-800/30">
+                <span className="font-bold text-amber-400 block mb-1">🟡 익절 조건 (Take Profit)</span>
+                <ul className="list-disc list-inside space-y-0.5 text-slate-300">
+                  {currentStrategy.exitRules.map((r, i) => (
+                    <li key={i}>{r}</li>
+                  ))}
+                </ul>
+              </div>
+              <div className="p-2.5 rounded-lg bg-red-950/20 border border-red-800/30">
+                <span className="font-bold text-red-400 block mb-1">🔴 손절 조건 (Stop Loss)</span>
+                <ul className="list-disc list-inside space-y-0.5 text-slate-300">
+                  {currentStrategy.stopLossRules.map((r, i) => (
+                    <li key={i}>{r}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Account Summary Banner */}
         <div className="px-5 py-3 bg-[#13182b] border-b border-[#1d253f] grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
@@ -301,7 +402,7 @@ export function PaperTradingModal({ isOpen, onClose, marketItems }: PaperTrading
                 : 'border-transparent text-[#64748b] hover:text-slate-300'
             }`}
           >
-            스윙 주문 & 전략 분석
+            스윙 주문 & 전략 적용
           </button>
           <button
             onClick={() => setActiveTab('POSITIONS')}
@@ -335,7 +436,7 @@ export function PaperTradingModal({ isOpen, onClose, marketItems }: PaperTrading
         <div className="flex-1 overflow-y-auto p-5">
           {activeTab === 'TRADE' && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-              {/* Left Column: Selah Swing Analysis & Levels (7 cols) */}
+              {/* Left Column: Strategy Analysis & Live Levels (7 cols) */}
               <div className="lg:col-span-7 space-y-4">
                 {/* Stock Selector Pill */}
                 <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
@@ -363,7 +464,7 @@ export function PaperTradingModal({ isOpen, onClose, marketItems }: PaperTrading
                         <span className="text-xs text-[#64748b] font-mono">({swingPreset.symbol})</span>
                       </div>
                       <span className="text-[11px] text-[#64748b]">
-                        섹터: {swingPreset.sector} ({swingPreset.sectorEtf}) · 일일 정상변동폭(ATR): {swingPreset.atr14Percent}%
+                        적용 전략: <strong className="text-blue-400">{currentStrategy.nameKo}</strong> · 섹터: {swingPreset.sector}
                       </span>
                     </div>
 
@@ -375,66 +476,60 @@ export function PaperTradingModal({ isOpen, onClose, marketItems }: PaperTrading
                     </div>
                   </div>
 
-                  {/* Selah Signal Alert Box */}
-                  <div className={`p-3.5 rounded-xl border mt-3 ${evaluation.color}`}>
+                  {/* Dynamic Strategy Signal Alert Box */}
+                  <div className={`p-3.5 rounded-xl border mt-3 ${evaluation.badgeColor}`}>
                     <div className="flex items-center justify-between font-semibold text-xs mb-1">
                       <div className="flex items-center gap-1.5">
                         <CheckCircle2 className="w-4 h-4" />
-                        <span>Selah 전략 신호: {evaluation.label}</span>
+                        <span>전략 신호: {evaluation.title}</span>
                       </div>
-                      {evaluation.riskRewardRatio > 0 && (
-                        <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-black/20">
-                          손익비: {evaluation.riskRewardRatio} : 1
-                        </span>
-                      )}
+                      <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-black/20">
+                        손익비: {evaluation.riskRewardRatio} : 1
+                      </span>
                     </div>
-                    <p className="text-[11px] leading-relaxed opacity-90">{evaluation.advice}</p>
+                    <p className="text-[11px] leading-relaxed opacity-90">{evaluation.description}</p>
                   </div>
 
-                  {/* 4 Key Levels Visualizer (R2, R1, S1, S2) */}
-                  <div className="mt-4 pt-3 border-t border-[#1d253f]">
-                    <div className="text-xs font-bold text-[#94a3b8] mb-2.5 flex items-center justify-between">
-                      <span>Selah Day 0 기준 가격선 (Support & Resistance)</span>
-                      <span className="text-[10px] text-[#64748b]">최근 6개월 매물대 분석 기준</span>
+                  {/* Calculated Target & Stoploss */}
+                  <div className="mt-4 pt-3 border-t border-[#1d253f] grid grid-cols-2 gap-3 text-xs">
+                    <div className="p-3 rounded-xl bg-[#0e1324] border border-emerald-500/30">
+                      <div className="flex items-center gap-1.5 text-emerald-400 text-[11px] font-bold mb-1">
+                        <Target className="w-3.5 h-3.5" />
+                        <span>목표 매도가 (Take Profit)</span>
+                      </div>
+                      <div className="text-base font-bold text-white font-mono">
+                        ${evaluation.targetPrice.toFixed(2)}
+                        <span className="text-xs text-emerald-400 ml-1.5 font-normal">
+                          (+{(((evaluation.targetPrice - currentPrice) / currentPrice) * 100).toFixed(1)}%)
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-4 gap-2 text-center text-xs">
-                      <div className="p-2.5 rounded-lg bg-red-950/30 border border-red-800/40">
-                        <span className="text-[10px] text-red-400 font-bold block">R2 (최종목표)</span>
-                        <span className="font-mono font-bold text-slate-200">${swingPreset.r2}</span>
+                    <div className="p-3 rounded-xl bg-[#0e1324] border border-red-500/30">
+                      <div className="flex items-center gap-1.5 text-red-400 text-[11px] font-bold mb-1">
+                        <Info className="w-3.5 h-3.5" />
+                        <span>손절 기준가 (Stop Loss)</span>
                       </div>
-                      <div className="p-2.5 rounded-lg bg-amber-950/30 border border-amber-800/40">
-                        <span className="text-[10px] text-amber-400 font-bold block">R1 (1차 익절)</span>
-                        <span className="font-mono font-bold text-slate-200">${swingPreset.r1}</span>
-                      </div>
-                      <div className="p-2.5 rounded-lg bg-emerald-950/30 border border-emerald-800/40 ring-1 ring-emerald-500/30">
-                        <span className="text-[10px] text-emerald-400 font-bold block">S1 (매수 타점)</span>
-                        <span className="font-mono font-bold text-slate-200">${swingPreset.s1}</span>
-                      </div>
-                      <div className="p-2.5 rounded-lg bg-zinc-900 border border-zinc-700/50">
-                        <span className="text-[10px] text-zinc-400 font-bold block">S2 (손절선)</span>
-                        <span className="font-mono font-bold text-slate-200">${swingPreset.s2}</span>
+                      <div className="text-base font-bold text-white font-mono">
+                        ${evaluation.stopLossPrice.toFixed(2)}
+                        <span className="text-xs text-red-400 ml-1.5 font-normal">
+                          ({(((evaluation.stopLossPrice - currentPrice) / currentPrice) * 100).toFixed(1)}%)
+                        </span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Rule Checklist Note */}
+                {/* Strategy Checkpoints Note */}
                 <div className="p-3.5 rounded-xl bg-[#111627] border border-[#1d253f] text-xs text-[#94a3b8] space-y-1.5">
                   <div className="flex items-center gap-1.5 text-blue-400 font-bold text-[11px]">
-                    <Info className="w-3.5 h-3.5" />
-                    <span>Selah 3대 매매 원칙 복기</span>
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>{currentStrategy.nameKo} 체크포인트</span>
                   </div>
                   <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-300">
-                    <li>
-                      <strong>출구 전략 우선</strong>: 진입 시점에 이미 목표가(R1)와 손절가(S2)가 확정되어 있어야 함.
-                    </li>
-                    <li>
-                      <strong>최소 손익비 2:1</strong>: 기대 수익폭(R1-현재가)이 예상 손실폭(현재가-S2)의 2배 이상일 때만 진입.
-                    </li>
-                    <li>
-                      <strong>R1 저항 분할 청산</strong>: R1 도달 시 미련 없이 50% 분할 익절하여 수익을 보존.
-                    </li>
+                    {evaluation.checkpoints.map((cp, idx) => (
+                      <li key={idx}>{cp}</li>
+                    ))}
                   </ul>
                 </div>
               </div>
@@ -451,7 +546,7 @@ export function PaperTradingModal({ isOpen, onClose, marketItems }: PaperTrading
                           : 'text-[#64748b] hover:text-white'
                       }`}
                     >
-                      매수 (BUY)
+                      가상 매수 (BUY)
                     </button>
                     <button
                       onClick={() => setOrderTab('SELL')}
@@ -461,14 +556,19 @@ export function PaperTradingModal({ isOpen, onClose, marketItems }: PaperTrading
                           : 'text-[#64748b] hover:text-white'
                       }`}
                     >
-                      매도 (SELL)
+                      가상 매도 (SELL)
                     </button>
                   </div>
 
                   {/* Price info */}
                   <div className="space-y-3 text-xs">
                     <div className="flex justify-between items-center text-[#94a3b8]">
-                      <span>주문 단가</span>
+                      <span>적용 전략</span>
+                      <span className="text-blue-400 font-semibold">{currentStrategy.nameKo}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center text-[#94a3b8]">
+                      <span>체결 예정가</span>
                       <span className="font-mono text-white font-bold text-sm">
                         ${currentPrice.toFixed(2)}
                       </span>
@@ -518,7 +618,7 @@ export function PaperTradingModal({ isOpen, onClose, marketItems }: PaperTrading
                     {/* Total Estimated Cost */}
                     <div className="p-3 rounded-lg bg-[#0c101d] border border-[#1f263d] space-y-1 mt-4">
                       <div className="flex justify-between text-[#94a3b8] text-[11px]">
-                        <span>총 결제 예상 금액</span>
+                        <span>총 주문 예상 금액</span>
                         <span className="font-mono text-white font-bold text-sm">
                           ${(currentPrice * orderQuantity).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </span>
@@ -544,7 +644,7 @@ export function PaperTradingModal({ isOpen, onClose, marketItems }: PaperTrading
                       onClick={executeBuy}
                       className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 transition-all active:scale-98 flex items-center justify-center gap-1.5"
                     >
-                      <span>{swingPreset.symbol} 가상 매수 주문</span>
+                      <span>{swingPreset.symbol} [{currentStrategy.nameKo}] 가상 매수</span>
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   ) : (
@@ -566,18 +666,19 @@ export function PaperTradingModal({ isOpen, onClose, marketItems }: PaperTrading
             <div className="space-y-3">
               {positions.length === 0 ? (
                 <div className="py-16 text-center text-zinc-500 text-xs">
-                  현재 보유 중인 포지션이 없습니다. [스윙 주문 & 전략 분석] 탭에서 가상 매수를 진행해 보세요!
+                  현재 보유 중인 포지션이 없습니다. [스윙 주문 & 전략 적용] 탭에서 원하는 전략을 선택하여 가상 매수를 진행해 보세요!
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs text-[#cbd5e1]">
                     <thead className="bg-[#0b0e1a] text-[#64748b] uppercase text-[11px] font-semibold border-b border-[#1d253f]">
                       <tr>
-                        <th className="py-3 px-4">종목</th>
+                        <th className="py-3 px-4">종목 (적용 전략)</th>
                         <th className="py-3 px-3 text-right">보유수량</th>
-                        <th className="py-3 px-3 text-right">매수단가</th>
+                        <th className="py-3 px-3 text-right">매수가</th>
                         <th className="py-3 px-3 text-right">현재가</th>
-                        <th className="py-3 px-3 text-right">평가손익 (PnL)</th>
+                        <th className="py-3 px-3 text-right">목표가 / 손절가</th>
+                        <th className="py-3 px-3 text-right">평가손익</th>
                         <th className="py-3 px-3 text-right">수익률</th>
                         <th className="py-3 px-4 text-center">원클릭 청산</th>
                       </tr>
@@ -594,12 +695,18 @@ export function PaperTradingModal({ isOpen, onClose, marketItems }: PaperTrading
                           <tr key={pos.symbol} className="hover:bg-[#141a2e] transition-colors">
                             <td className="py-3 px-4">
                               <span className="font-bold text-white block">{pos.symbol}</span>
-                              <span className="text-[11px] text-[#64748b]">{pos.name}</span>
+                              <span className="text-[10px] text-blue-400 bg-blue-500/10 px-1 py-0.2 rounded border border-blue-500/20">
+                                {pos.strategyName || 'Selah 스윙'}
+                              </span>
                             </td>
                             <td className="py-3 px-3 text-right font-mono font-semibold">{pos.quantity}주</td>
                             <td className="py-3 px-3 text-right font-mono">${pos.avgPrice.toFixed(2)}</td>
                             <td className="py-3 px-3 text-right font-mono font-bold text-white">
                               ${livePrice.toFixed(2)}
+                            </td>
+                            <td className="py-3 px-3 text-right font-mono text-[11px]">
+                              <span className="text-emerald-400 block">${pos.targetPrice?.toFixed(2) || '--'}</span>
+                              <span className="text-red-400 block">${pos.stopLossPrice?.toFixed(2) || '--'}</span>
                             </td>
                             <td
                               className={`py-3 px-3 text-right font-mono font-bold ${
@@ -623,7 +730,7 @@ export function PaperTradingModal({ isOpen, onClose, marketItems }: PaperTrading
                                     executeSell(Math.max(1, Math.floor(pos.quantity / 2)));
                                   }}
                                   className="px-2 py-1 rounded bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 text-[10px] font-bold"
-                                  title="R1 도달 시 50% 분할 익절 규칙"
+                                  title="50% 분할 익절"
                                 >
                                   50% 분할익절
                                 </button>
@@ -661,6 +768,7 @@ export function PaperTradingModal({ isOpen, onClose, marketItems }: PaperTrading
                       <tr>
                         <th className="py-3 px-4">시간</th>
                         <th className="py-3 px-3">구분</th>
+                        <th className="py-3 px-3">적용 전략</th>
                         <th className="py-3 px-3">종목</th>
                         <th className="py-3 px-3 text-right">체결단가</th>
                         <th className="py-3 px-3 text-right">수량</th>
@@ -681,6 +789,11 @@ export function PaperTradingModal({ isOpen, onClose, marketItems }: PaperTrading
                               }`}
                             >
                               {log.type === 'BUY' ? '매수' : '매도'}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <span className="text-[10px] text-blue-400 bg-blue-500/10 px-1 py-0.2 rounded border border-blue-500/20">
+                              {log.strategyName || 'Selah'}
                             </span>
                           </td>
                           <td className="py-2.5 px-3 font-bold text-white">{log.symbol}</td>
