@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Search, Star, Settings, Sparkles, SlidersHorizontal } from 'lucide-react';
+import { Search, Star, Settings, Sparkles } from 'lucide-react';
 
 interface HeaderProps {
   onOpenReport?: () => void;

@@ -9,7 +9,6 @@ import {
   TrendingDown,
   ArrowUpDown,
   Filter,
-  Check,
 } from 'lucide-react';
 
 interface MarketTableProps {
@@ -61,8 +60,8 @@ export function MarketTable({
         return true;
       })
       .sort((a, b) => {
-        let valA: number = (a as unknown as Record<string, number>)[sortField] ?? 0;
-        let valB: number = (b as unknown as Record<string, number>)[sortField] ?? 0;
+        const valA: number = (a as unknown as Record<string, number>)[sortField] ?? 0;
+        const valB: number = (b as unknown as Record<string, number>)[sortField] ?? 0;
 
         if (sortAsc) {
           return valA > valB ? 1 : -1;

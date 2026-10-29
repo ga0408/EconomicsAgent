@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { MOCK_REPORTS, ReportItem } from '@/data/mockData';
-import { X, Sparkles, Calendar, Clock, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { X, Sparkles, Calendar, Clock, CheckCircle2 } from 'lucide-react';
 
 interface AiReportModalProps {
   isOpen: boolean;

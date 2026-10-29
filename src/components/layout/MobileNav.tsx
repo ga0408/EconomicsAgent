@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Layers, FileText, Search, Briefcase, Sparkles } from 'lucide-react';
+import { Layers, FileText, Briefcase, Sparkles } from 'lucide-react';
 
 interface MobileNavProps {
   currentTab: string;

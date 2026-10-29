@@ -10,7 +10,7 @@ import { MarketTable } from '@/components/dashboard/MarketTable';
 import { AiReportModal } from '@/components/dashboard/AiReportModal';
 import { MARKET_DATA as FALLBACK_MARKET, TICKER_DATA as FALLBACK_TICKER, TOP_GAINERS as FALLBACK_GAINERS } from '@/data/mockData';
 import { MarketApiResponse } from '@/types';
-import { Sparkles, ArrowRight, RefreshCw } from 'lucide-react';
+import { ArrowRight, RefreshCw } from 'lucide-react';
 
 export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -19,7 +19,6 @@ export default function Home() {
 
   // 실시간 API 데이터 상태
   const [marketData, setMarketData] = useState<MarketApiResponse | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
   // API 호출 함수
@@ -33,7 +32,6 @@ export default function Home() {
     } catch (err) {
       console.error('Failed to fetch real market data:', err);
     } finally {
-      setIsLoading(false);
       if (isManual) {
         setTimeout(() => setIsRefreshing(false), 500);
       }
