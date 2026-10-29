@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { TickerBar } from '@/components/layout/TickerBar';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { MobileNav } from '@/components/layout/MobileNav';
 import { TopCards } from '@/components/dashboard/TopCards';
 import { MarketTable } from '@/components/dashboard/MarketTable';
 import { AiReportModal } from '@/components/dashboard/AiReportModal';
@@ -37,7 +38,7 @@ export default function Home() {
         />
 
         {/* Right Main Body */}
-        <main className="flex-1 overflow-y-auto px-6 py-6 min-h-[calc(100vh-80px)]">
+        <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 pb-20 lg:pb-6 min-h-[calc(100vh-80px)]">
           {/* Top Banner Alert (DropsTab Track peace deals / FOMC style) */}
           <div className="mb-6 p-3 px-4 rounded-xl bg-gradient-to-r from-blue-950/60 via-indigo-950/40 to-slate-900 border border-blue-500/30 flex items-center justify-between text-xs shadow-lg">
             <div className="flex items-center gap-3">
@@ -98,6 +99,13 @@ export default function Home() {
       <AiReportModal
         isOpen={isReportOpen}
         onClose={() => setIsReportOpen(false)}
+      />
+
+      {/* Mobile Bottom Navigation Bar */}
+      <MobileNav
+        currentTab={selectedCategory}
+        setTab={setSelectedCategory}
+        onOpenReport={() => setIsReportOpen(true)}
       />
     </div>
   );

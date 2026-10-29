@@ -1,39 +1,5 @@
-export interface MarketItem {
-  id: string;
-  rank: number;
-  name: string;
-  symbol: string;
-  category: 'crypto' | 'us_stock' | 'kr_stock' | 'macro';
-  categoryLabel: string;
-  icon?: string;
-  price: number;
-  displayPrice: string;
-  change1h: number;
-  change24h: number;
-  change7d: number;
-  marketCapOrVolume: string;
-  high24h: string;
-  low24h: string;
-  sparkline: number[];
-}
-
-export interface TickerItem {
-  name: string;
-  value: string;
-  change: number;
-  isUp: boolean;
-}
-
-export interface ReportItem {
-  id: string;
-  title: string;
-  category: 'Morning Brief' | 'Market Close' | 'Macro Event';
-  date: string;
-  summary: string;
-  highlights: string[];
-  impact: 'Bullish' | 'Bearish' | 'Neutral';
-  readTime: string;
-}
+import { MarketItem, TickerItem, ReportItem } from '@/types';
+export type { MarketItem, TickerItem, ReportItem };
 
 export const TICKER_DATA: TickerItem[] = [
   { name: 'S&P 500', value: '5,864.67', change: 0.42, isUp: true },

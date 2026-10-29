@@ -68,7 +68,7 @@ export function Sidebar({ currentCategory, setCategory, onOpenReport }: SidebarP
   ];
 
   return (
-    <aside className="w-64 bg-[#0d111c] border-r border-[#1c2237] flex flex-col justify-between p-3 select-none shrink-0 min-h-[calc(100vh-80px)]">
+    <aside className="hidden lg:flex w-64 bg-[#0d111c] border-r border-[#1c2237] flex-col justify-between p-3 select-none shrink-0 min-h-[calc(100vh-80px)]">
       <div className="space-y-6">
         {navSections.map((section, idx) => (
           <div key={idx}>

@@ -114,7 +114,7 @@ export function AiReportModal({ isOpen, onClose }: AiReportModalProps) {
                 주요 핵심 포인트 (Takeaways)
               </h3>
               <div className="space-y-2">
-                {selectedReport.highlights.map((point, i) => (
+                {selectedReport.highlights.map((point: string, i: number) => (
                   <div
                     key={i}
                     className="flex items-start gap-2.5 p-2.5 rounded-lg bg-[#14192b] border border-[#1e263d] text-xs text-slate-200"
