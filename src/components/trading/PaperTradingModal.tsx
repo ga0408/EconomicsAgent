@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { SWING_PRESETS } from '@/data/swingTradeRules';
 import { ALL_STRATEGIES, StrategyId } from '@/strategies';
-import { MarketItem } from '@/types';
+import { MarketItem, SectorItem } from '@/types';
 import {
   X,
   TrendingUp,
@@ -45,11 +45,12 @@ interface PaperTradingModalProps {
   isOpen: boolean;
   onClose: () => void;
   marketItems: MarketItem[];
+  sectors?: SectorItem[];
 }
 
 const INITIAL_CASH = 100000; // $100,000
 
-export function PaperTradingModal({ isOpen, onClose, marketItems }: PaperTradingModalProps) {
+export function PaperTradingModal({ isOpen, onClose, marketItems, sectors = [] }: PaperTradingModalProps) {
   const [cash, setCash] = useState<number>(INITIAL_CASH);
   const [positions, setPositions] = useState<Position[]>([]);
   const [tradeLogs, setTradeLogs] = useState<TradeLog[]>([]);
@@ -129,6 +130,9 @@ export function PaperTradingModal({ isOpen, onClose, marketItems }: PaperTrading
 
   // 선택된 전략으로 실시간 시세 평가
   const evaluation = currentStrategy.evaluate(currentPrice);
+
+  // 소속 섹터 정보 매칭
+  const matchingSector = sectors.find((s) => s.symbol === swingPreset.sectorEtf);
 
   // 총 자산 및 평가 손익 계산
   const totalStockValue = positions.reduce((acc, pos) => {
@@ -463,9 +467,25 @@ export function PaperTradingModal({ isOpen, onClose, marketItems }: PaperTrading
                         <h3 className="text-lg font-bold text-white">{swingPreset.name}</h3>
                         <span className="text-xs text-[#64748b] font-mono">({swingPreset.symbol})</span>
                       </div>
-                      <span className="text-[11px] text-[#64748b]">
-                        적용 전략: <strong className="text-blue-400">{currentStrategy.nameKo}</strong> · 섹터: {swingPreset.sector}
-                      </span>
+                      <div className="text-[11px] text-[#64748b] flex flex-wrap items-center gap-2 mt-0.5">
+                        <span>적용 전략: <strong className="text-blue-400">{currentStrategy.nameKo}</strong></span>
+                        <span>·</span>
+                        <span>섹터: {swingPreset.sector}</span>
+                        {matchingSector && (
+                          <span className={`inline-flex items-center gap-1 font-semibold px-2 py-0.5 rounded-full text-[10px] ${
+                            matchingSector.status === 'LEADER'
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                              : matchingSector.status === 'ROTATION'
+                              ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                              : matchingSector.status === 'LAGGING'
+                              ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30'
+                              : 'bg-zinc-800 text-zinc-300'
+                          }`}>
+                            <span>{matchingSector.symbol} 1W {matchingSector.change1w >= 0 ? '+' : ''}{matchingSector.change1w}%</span>
+                            <span>({matchingSector.statusLabel})</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="text-right">

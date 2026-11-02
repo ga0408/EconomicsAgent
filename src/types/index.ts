@@ -39,6 +39,38 @@ export interface TopGainerItem {
   icon: string;
 }
 
+export type SectorStatus = 'LEADER' | 'ROTATION' | 'LAGGING' | 'NEUTRAL';
+
+export interface SectorItem {
+  symbol: string;
+  name: string;
+  nameKo: string;
+  price: number;
+  displayPrice: string;
+  change1d: number;
+  change1w: number;
+  change1m: number;
+  rank: number;
+  status: SectorStatus;
+  statusLabel: string;
+  weight: string; // S&P500 비중
+  leadingStocks: string[]; // 대표 종목
+  sparkline: number[];
+}
+
+export interface SectorApiResponse {
+  sectors: SectorItem[];
+  leadingSector: string;
+  laggingSector: string;
+  marketBreadth: {
+    advancingCount: number;
+    decliningCount: number;
+    regime: 'RISK_ON' | 'RISK_OFF' | 'ROTATION';
+    regimeLabel: string;
+  };
+  lastUpdated: string;
+}
+
 export interface MarketApiResponse {
   tickerData: TickerItem[];
   marketData: MarketItem[];

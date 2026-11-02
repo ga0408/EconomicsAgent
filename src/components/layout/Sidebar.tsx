@@ -61,7 +61,7 @@ export function Sidebar({ currentCategory, setCategory, onOpenReport, onOpenPape
       title: 'TRADING & TOOLS',
       items: [
         { id: 'paper_trade', label: '모의 트레이딩', icon: Crosshair, badge: 'Beta', onClick: onOpenPaperTrade },
-        { id: 'swing_radar', label: '스윙 레이더', icon: Flame, badge: 'New' },
+        { id: 'swing_radar', label: '11대 섹터 순환매', icon: Flame, badge: 'Hot' },
         { id: 'watchlist', label: '관심 종목', icon: Star, badge: null },
         { id: 'portfolio', label: '내 포트폴리오', icon: Briefcase, badge: null },
       ],

@@ -6,11 +6,12 @@ import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { TopCards } from '@/components/dashboard/TopCards';
+import { SectorTracker } from '@/components/dashboard/SectorTracker';
 import { MarketTable } from '@/components/dashboard/MarketTable';
 import { AiReportModal } from '@/components/dashboard/AiReportModal';
 import { PaperTradingModal } from '@/components/trading/PaperTradingModal';
 import { MARKET_DATA as FALLBACK_MARKET, TICKER_DATA as FALLBACK_TICKER, TOP_GAINERS as FALLBACK_GAINERS } from '@/data/mockData';
-import { MarketApiResponse } from '@/types';
+import { MarketApiResponse, SectorApiResponse } from '@/types';
 import { ArrowRight, RefreshCw } from 'lucide-react';
 
 export default function Home() {
@@ -21,18 +22,28 @@ export default function Home() {
 
   // 실시간 API 데이터 상태
   const [marketData, setMarketData] = useState<MarketApiResponse | null>(null);
+  const [sectorData, setSectorData] = useState<SectorApiResponse | null>(null);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
   // API 호출 함수
   const fetchMarketData = useCallback(async (isManual = false) => {
     if (isManual) setIsRefreshing(true);
     try {
-      const res = await fetch('/api/market');
-      if (!res.ok) throw new Error('API request failed');
-      const data: MarketApiResponse = await res.json();
-      setMarketData(data);
+      const [marketRes, sectorRes] = await Promise.all([
+        fetch('/api/market'),
+        fetch('/api/sectors').catch(() => null),
+      ]);
+
+      if (marketRes.ok) {
+        const data: MarketApiResponse = await marketRes.json();
+        setMarketData(data);
+      }
+      if (sectorRes && sectorRes.ok) {
+        const sData: SectorApiResponse = await sectorRes.json();
+        setSectorData(sData);
+      }
     } catch (err) {
-      console.error('Failed to fetch real market data:', err);
+      console.error('Failed to fetch real market or sector data:', err);
     } finally {
       if (isManual) {
         setTimeout(() => setIsRefreshing(false), 500);
@@ -144,7 +155,16 @@ export default function Home() {
             btcDominance={marketData?.btcDominance}
           />
 
-          {/* 5. Main Market Data Table */}
+          {/* 5. 11 GICS Sector Rotation Tracker (Selah Rule 02) */}
+          <SectorTracker
+            data={sectorData}
+            onSelectSector={(sym) => {
+              // 섹터 클릭 시 검색창이나 필터에 연결
+              setSearchQuery(sym);
+            }}
+          />
+
+          {/* 6. Main Market Data Table */}
           <MarketTable
             items={currentMarketData}
             selectedCategory={selectedCategory}
@@ -165,6 +185,7 @@ export default function Home() {
         isOpen={isPaperTradeOpen}
         onClose={() => setIsPaperTradeOpen(false)}
         marketItems={currentMarketData}
+        sectors={sectorData?.sectors}
       />
 
       {/* Mobile Bottom Navigation Bar */}
